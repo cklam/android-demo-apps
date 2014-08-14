@@ -1,1 +1,3 @@
-include ':thermometer'
+include ':libraries:relayr-sdk:android-sdk',
+        ':thermometer'
+
