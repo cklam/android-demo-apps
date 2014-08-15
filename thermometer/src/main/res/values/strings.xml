@@ -3,5 +3,10 @@
 
     <string name="app_name">ThermometerDemo</string>
     <string name="hello_relayr">Hello Relayrer!</string>
+    <string name="action_log_in">Log in</string>
+    <string name="action_log_out">Log out</string>
+    <string name="successfully_logged_in">You were successfully logged in!</string>
+    <string name="successfully_logged_out">You were successfully logged out!</string>
+    <string name="unsuccessfully_logged_in">There was a problem in the log in.</string>
 
 </resources>
