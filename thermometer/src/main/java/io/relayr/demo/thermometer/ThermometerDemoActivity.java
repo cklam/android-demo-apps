@@ -100,15 +100,57 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
 
                     @Override
                     public void onError(Throwable e) {
-
+                        Toast.makeText(ThermometerDemoActivity.this, R.string.something_went_wrong,
+                                Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
                     public void onNext(User user) {
                         String hello = String.format(getString(R.string.hello), user.getName());
                         mWelcomeTextView.setText(hello);
+                        loadTemperatureDevice(user);
                     }
                 });
+    }
+
+    private void loadTemperatureDevice(User user) {
+        RelayrSdk.getRelayrApi()
+                .getTransmitters(user.id)
+                .flatMap(new Func1<List<Transmitter>, Observable<List<TransmitterDevice>>>() {
+                    @Override
+                    public Observable<List<TransmitterDevice>> call(List<Transmitter> transmitters) {
+                        // This is a naive implementation. Users may own many WunderBars or other
+                        // kinds of transmitter.
+                        if (transmitters.isEmpty())
+                            return Observable.from(new ArrayList<List<TransmitterDevice>>());
+                        return RelayrSdk.getRelayrApi().getTransmitterDevices(transmitters.get(0).id);
+                    }
+                })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Subscriber<List<TransmitterDevice>>() {
+                    @Override
+                    public void onCompleted() {
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Toast.makeText(ThermometerDemoActivity.this, R.string.something_went_wrong,
+                                Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onNext(List<TransmitterDevice> devices) {
+                        for (TransmitterDevice device : devices) {
+                            if (device.model.equals(DeviceModel.TEMPERATURE_HUMIDITY.getId())) {
+                                // TODO: subscribeForTemperatureUpdates(device);
+                                return;
+                            }
+                        }
+                    }
+                });
+
     }
 
     @Override
