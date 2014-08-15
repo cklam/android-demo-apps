@@ -29,14 +29,19 @@ import rx.schedulers.Schedulers;
 
 public class ThermometerDemoActivity extends Activity implements LoginEventListener {
 
-    private TextView mTemperatureValue;
+    private TextView mWelcomeTextView;
     private Subscription mWebSocketSubscription;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_thermometer_demo);
-        if (!RelayrSdk.isUserLoggedIn()) {
+        View view = View.inflate(this, R.layout.activity_thermometer_demo, null);
+        mWelcomeTextView = (TextView) view.findViewById(R.id.txt_welcome);
+        setContentView(view);
+        if (RelayrSdk.isUserLoggedIn()) {
+            updateUiForALoggedInUser();
+        } else {
+            updateUiForANonLoggedInUser();
             RelayrSdk.logIn(this, this);
         }
     }
@@ -71,16 +76,51 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
         RelayrSdk.logOut();
         invalidateOptionsMenu();
         Toast.makeText(this, R.string.successfully_logged_out, Toast.LENGTH_SHORT).show();
+        updateUiForANonLoggedInUser();
+    }
+
+    private void updateUiForANonLoggedInUser() {
+        mWelcomeTextView.setText(R.string.hello_relayr);
+    }
+
+    private void updateUiForALoggedInUser() {
+        loadUserInfo();
+    }
+
+    private void loadUserInfo() {
+        RelayrSdk.getRelayrApi()
+                .getUserInfo()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Subscriber<User>() {
+                    @Override
+                    public void onCompleted() {
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onNext(User user) {
+                        String hello = String.format(getString(R.string.hello), user.getName());
+                        mWelcomeTextView.setText(hello);
+                    }
+                });
     }
 
     @Override
     public void onSuccessUserLogIn() {
         Toast.makeText(this, R.string.successfully_logged_in, Toast.LENGTH_SHORT).show();
         invalidateOptionsMenu();
+        updateUiForALoggedInUser();
     }
 
     @Override
     public void onErrorLogin(Throwable e) {
         Toast.makeText(this, R.string.unsuccessfully_logged_in, Toast.LENGTH_SHORT).show();
+        updateUiForANonLoggedInUser();
     }
 }

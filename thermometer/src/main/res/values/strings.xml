@@ -2,6 +2,7 @@
 <resources>
 
     <string name="app_name">ThermometerDemo</string>
+    <string name="hello">Hello %s!</string>
     <string name="hello_relayr">Hello Relayrer!</string>
     <string name="action_log_in">Log in</string>
     <string name="action_log_out">Log out</string>
