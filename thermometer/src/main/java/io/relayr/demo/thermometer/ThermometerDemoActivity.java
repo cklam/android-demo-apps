@@ -30,6 +30,11 @@ import rx.schedulers.Schedulers;
 public class ThermometerDemoActivity extends Activity implements LoginEventListener {
 
     private TextView mWelcomeTextView;
+    private TextView mTemperatureValueTextView;
+    private TextView mTemperatureNameTextView;
+    private TransmitterDevice mDevice;
+    private Subscription mUserInfoSubscription;
+    private Subscription mTemperatureDeviceSubscription;
     private Subscription mWebSocketSubscription;
 
     @Override
@@ -37,11 +42,10 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
         super.onCreate(savedInstanceState);
         View view = View.inflate(this, R.layout.activity_thermometer_demo, null);
         mWelcomeTextView = (TextView) view.findViewById(R.id.txt_welcome);
+        mTemperatureValueTextView = (TextView) view.findViewById(R.id.txt_temperature_value);
+        mTemperatureNameTextView = (TextView) view.findViewById(R.id.txt_temperature_name);
         setContentView(view);
-        if (RelayrSdk.isUserLoggedIn()) {
-            updateUiForALoggedInUser();
-        } else {
-            updateUiForANonLoggedInUser();
+        if (!RelayrSdk.isUserLoggedIn()) {
             RelayrSdk.logIn(this, this);
         }
     }
@@ -73,6 +77,7 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
     }
 
     private void logOut() {
+        unSubscribeToUpdates();
         RelayrSdk.logOut();
         invalidateOptionsMenu();
         Toast.makeText(this, R.string.successfully_logged_out, Toast.LENGTH_SHORT).show();
@@ -80,15 +85,19 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
     }
 
     private void updateUiForANonLoggedInUser() {
+        mTemperatureValueTextView.setVisibility(View.GONE);
+        mTemperatureNameTextView.setVisibility(View.GONE);
         mWelcomeTextView.setText(R.string.hello_relayr);
     }
 
     private void updateUiForALoggedInUser() {
+        mTemperatureValueTextView.setVisibility(View.VISIBLE);
+        mTemperatureNameTextView.setVisibility(View.VISIBLE);
         loadUserInfo();
     }
 
     private void loadUserInfo() {
-        RelayrSdk.getRelayrApi()
+        mUserInfoSubscription = RelayrSdk.getRelayrApi()
                 .getUserInfo()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -114,7 +123,7 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
     }
 
     private void loadTemperatureDevice(User user) {
-        RelayrSdk.getRelayrApi()
+        mTemperatureDeviceSubscription = RelayrSdk.getRelayrApi()
                 .getTransmitters(user.id)
                 .flatMap(new Func1<List<Transmitter>, Observable<List<TransmitterDevice>>>() {
                     @Override
@@ -123,7 +132,7 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
                         // kinds of transmitter.
                         if (transmitters.isEmpty())
                             return Observable.from(new ArrayList<List<TransmitterDevice>>());
-                        return RelayrSdk.getRelayrApi().getTransmitterDevices(transmitters.get(0).id);
+                        return RelayrSdk.getRelayrApi().getTransmitterDevices(transmitters.get(1).id);
                     }
                 })
                 .subscribeOn(Schedulers.io())
@@ -144,7 +153,7 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
                     public void onNext(List<TransmitterDevice> devices) {
                         for (TransmitterDevice device : devices) {
                             if (device.model.equals(DeviceModel.TEMPERATURE_HUMIDITY.getId())) {
-                                // TODO: subscribeForTemperatureUpdates(device);
+                                subscribeForTemperatureUpdates(device);
                                 return;
                             }
                         }
@@ -152,6 +161,64 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
                 });
 
     }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        unSubscribeToUpdates();
+    }
+
+    private static boolean isSubscribed(Subscription subscription) {
+        return subscription != null && !subscription.isUnsubscribed();
+    }
+
+    private void unSubscribeToUpdates() {
+        if (isSubscribed(mUserInfoSubscription)) {
+            mUserInfoSubscription.unsubscribe();
+        }
+        if (isSubscribed(mTemperatureDeviceSubscription)) {
+            mTemperatureDeviceSubscription.unsubscribe();
+        }
+        if (isSubscribed(mWebSocketSubscription)) {
+            mWebSocketSubscription.unsubscribe();
+            RelayrSdk.getWebSocketClient().unSubscribe(mDevice.id);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (RelayrSdk.isUserLoggedIn()) {
+            updateUiForALoggedInUser();
+        } else {
+            updateUiForANonLoggedInUser();
+        }
+    }
+
+    private void subscribeForTemperatureUpdates(TransmitterDevice device) {
+        mDevice = device;
+        mWebSocketSubscription = RelayrSdk.getWebSocketClient()
+                .subscribe(device, new Subscriber<Object>() {
+
+                    @Override
+                    public void onCompleted() {
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Toast.makeText(ThermometerDemoActivity.this, R.string.something_went_wrong,
+                                Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onNext(Object o) {
+                        Reading reading = new Gson().fromJson(o.toString(), Reading.class);
+                        mTemperatureValueTextView.setText(reading.temp + "˚C");
+                    }
+                });
+    }
+
 
     @Override
     public void onSuccessUserLogIn() {

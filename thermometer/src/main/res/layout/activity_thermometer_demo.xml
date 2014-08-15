@@ -17,4 +17,21 @@
         android:layout_height="wrap_content"
         android:textSize="22sp"/>
 
+    <TextView
+        android:id="@+id/txt_temperature_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="60sp"
+        android:paddingTop="25dp"
+        android:paddingBottom="25dp"/>
+
+    <TextView
+        android:id="@+id/txt_temperature_name"
+        android:text="@string/title_temperature"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="30sp"
+        android:layout_gravity="center"
+        android:paddingBottom="25dp"/>
+
 </LinearLayout>
