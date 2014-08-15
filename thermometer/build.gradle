@@ -11,7 +11,16 @@ android {
         versionCode 1
         versionName '1.0'
     }
+    sourceSets {
+        production {
+            java.srcDirs = ['src/release/java']
+        }
+    }
     buildTypes {
+        production {
+            debuggable true
+            signingConfig signingConfigs.debug
+        }
         release {
             runProguard false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
