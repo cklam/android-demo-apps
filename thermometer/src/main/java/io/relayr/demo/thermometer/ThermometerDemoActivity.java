@@ -132,7 +132,7 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
                         // kinds of transmitter.
                         if (transmitters.isEmpty())
                             return Observable.from(new ArrayList<List<TransmitterDevice>>());
-                        return RelayrSdk.getRelayrApi().getTransmitterDevices(transmitters.get(1).id);
+                        return RelayrSdk.getRelayrApi().getTransmitterDevices(transmitters.get(0).id);
                     }
                 })
                 .subscribeOn(Schedulers.io())
