@@ -1,3 +1,0 @@
-[submodule "libraries/relayr-sdk"]
-	path = libraries/relayr-sdk
-	url = https://hudomju@github.com/relayr/android-sdk.git
