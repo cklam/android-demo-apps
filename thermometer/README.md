@@ -9,9 +9,9 @@ Gradle includes a feature called "Build Types", which are, in essence variations
 These 'variations' of the app are distiguishable by the files chosen to be compiled in each of them.
 
 In the thermometer demo app we have created 3 build types:
-- Debug, with the initialization of the SDK in Mock mode, i.e.- displaying mock data in the app. 
-- Production, with the initialization of the of the SDK in production mode - i.e. displaying real data coming from the sensors. 
-- Release, displaying real data and including a signature - which is used for the release of the app to the Google Play store.
+- Debug. The SDK is initialized in Mock mode, i.e.- displaying mock data in the app. 
+- Production. The SDK is initialized in Production mode - i.e. displaying real data coming from the sensors. 
+- Release. Displaying real data and including a signature - which is used for the release of the app to the Google Play store.
 
 For a more elaborate explanation about Build Types - please see [this link](http://tools.android.com/tech-docs/new-build-system/user-guide#TOC-Build-Types)
 
