@@ -2,7 +2,7 @@
 <resources>
 
     <string name="app_name">ThermometerDirectConnection</string>
-    <string name="not_connected">Not Connected to Temperature/Humidity Sensor</string>
+    <string name="not_connected">Connecting to Temperature/Humidity Sensor</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="sensor_discovery_error">There was an error when searching for sensors</string>

@@ -2,11 +2,10 @@ package android.relayr.thermometerdirectconnection;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.json.JSONObject;
+import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +16,7 @@ import io.relayr.ble.BleDeviceMode;
 import io.relayr.ble.BleDeviceType;
 import io.relayr.ble.service.BaseService;
 import io.relayr.ble.service.DirectConnectionService;
+import io.relayr.model.Reading;
 import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Func1;
@@ -24,10 +24,14 @@ import rx.schedulers.Schedulers;
 
 public class ThermometerDemoActivity extends Activity {
 
+    private TextView readingOutput = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_thermometer_demo);
+
+        readingOutput = (TextView) findViewById(R.id.temperatureOutput);
 
         discoverThermometer();
     }
@@ -138,17 +142,8 @@ public class ThermometerDemoActivity extends Activity {
                     public void onNext(String s) {
 
                         // Get the sensor data from the JSON, display the value in the application
-                        JSONObject readingJSON;
-                        String reading = null;
-                        try {
-                            readingJSON = new JSONObject(s);
-                            reading = readingJSON.get("temp").toString();
-                        } catch (Exception e) {
-                            Log.d("JSON Exception",
-                                    "JSON Exception when reading data. Detail: " + e.toString());
-                        }
-
-                        ((TextView) findViewById(R.id.temperatureOutput)).setText(reading);
+                        Reading reading = new Gson().fromJson(s, Reading.class);
+                        readingOutput.setText(reading.temp + "°C");
                     }
                 });
     }
