@@ -1,7 +1,6 @@
 package android.relayr.thermometerdirectconnection;
 
 import android.app.Activity;
-import android.app.ActionBar;
 import android.app.Fragment;
 import android.os.Bundle;
 import android.util.Log;
@@ -10,7 +9,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.os.Build;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -69,11 +67,11 @@ public class ThermometerDemoActivity extends Activity {
         super.onStart();
 
         // Search for a thermometer in DirectConnection mode. If found, connect to it and start reading values
-        DiscoverThermometer();
+        discoverThermometer();
     }
 
     // Discover any paired Thermometer sensor modules. If one is found, connect in DirectConnection mode
-    public void DiscoverThermometer() {
+    public void discoverThermometer() {
 
         // Only search for Temperature/Humidity sensor modules
         ArrayList<BleDeviceType> deviceTypes = new ArrayList<BleDeviceType>();

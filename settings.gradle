@@ -1,2 +1,2 @@
-include ':thermometer'
+include ':thermometer', ':ThermometerDirectConnection'
 
