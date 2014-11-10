@@ -1,2 +1,2 @@
-include ':thermometer', ':ThermometerDirectConnection', ':AndroidCommons:RelayrCommons'
+include ':thermometer', ':ThermometerDirectConnection'
 

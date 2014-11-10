@@ -7,69 +7,28 @@
     android:background="@android:color/black"
     android:animateLayoutChanges="true">
 
-    <ProgressBar
-        android:id="@+id/thu_progress"
-        style="?android:attr/progressBarStyle"
-        android:layout_marginTop="20dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true" />
-
-    <io.relayr.commons.widget.CustomTextView
-        android:id="@+id/thermometer_scanning"
-        android:layout_below="@id/thu_progress"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/thermometer_scanning"
-        style="@style/BoldText"
-        android:layout_marginTop="50dp"
-        android:textColor="@color/gray_low"
-        android:textStyle="bold"
-        android:textSize="40sp"
-        android:layout_centerHorizontal="true"
-        android:visibility="gone" />
-
-    <io.relayr.commons.widget.CustomTextView
-        android:id="@+id/thermometer_found"
-        android:layout_below="@+id/thermometer_scanning"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/thermometer_found"
-        style="@style/BoldText"
-        android:layout_marginTop="20dp"
-        android:textColor="@color/gray_medium"
-        android:textStyle="bold"
-        android:textSize="50sp"
-        android:layout_centerHorizontal="true"
-        android:visibility="gone" />
-
-    <io.relayr.commons.widget.CustomTextView
-        android:id="@+id/thermometer_connected"
-        android:layout_below="@id/thermometer_found"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/thermometer_connected"
-        style="@style/BoldText"
-        android:layout_marginTop="20dp"
-        android:textColor="@color/gray_hard"
-        android:textSize="60sp"
-        android:gravity="center_horizontal"
-        android:layout_centerHorizontal="true"
-        android:visibility="gone" />
-
-    <io.relayr.commons.widget.CustomTextView
+    <TextView
         android:id="@+id/thermometer_output"
-        android:layout_below="@id/thermometer_connected"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        style="@style/BoldText"
         android:textColor="@android:color/white"
         android:layout_marginTop="50dp"
-        android:textSize="80sp"
-        android:layout_centerHorizontal="true" />
+        android:textSize="70sp"
+        android:layout_centerHorizontal="true"
+        android:layout_centerInParent="true" />
 
-    <io.relayr.commons.widget.CustomTextView
+    <TextView
+        android:layout_below="@id/thermometer_output"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/white"
+        android:layout_marginTop="10dp"
+        android:textSize="70sp"
+        android:text="@string/celsius"
+        android:layout_centerHorizontal="true"
+        android:layout_centerInParent="true" />
+
+    <TextView
         android:id="@+id/thermometer_error"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

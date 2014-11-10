@@ -1,14 +1,9 @@
 package io.relayr.demo.thermometer.directconnection;
 
 import android.app.Activity;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothManager;
-import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 
@@ -25,44 +20,42 @@ import io.relayr.model.Reading;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
+import rx.subscriptions.Subscriptions;
 
 public class ThermometerDemoActivity extends Activity {
 
-    private TextView mThOutput;
-    private TextView mThError;
-    private ProgressBar mProgressBar;
+    private TextView mThermometerOutput;
+    private TextView mThermometerError;
 
-    private Subscription mThuSubscription;
-    private Subscription mDirectConnSubscription;
-    private Subscription mBleDevicesSubscription;
-
-    private BluetoothAdapter mBTAdapter;
+    private Subscription mThuSubscription = Subscriptions.empty();
+    private Subscription mDirectConnSubscription = Subscriptions.empty();
+    private Subscription mBleDevicesSubscription = Subscriptions.empty();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_thermometer_demo);
 
-        mProgressBar = (ProgressBar) findViewById(R.id.thu_progress);
-
-        mThOutput = (TextView) findViewById(R.id.thermometer_output);
-        mThError = (TextView) findViewById(R.id.thermometer_error);
+        mThermometerOutput = (TextView) findViewById(R.id.thermometer_output);
+        mThermometerError = (TextView) findViewById(R.id.thermometer_error);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
-        BluetoothManager btManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-
-        mBTAdapter = btManager.getAdapter();
-        if (mBTAdapter != null && !mBTAdapter.isEnabled()) {
-            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivity(enableIntent);
+        if (!RelayrSdk.isBleSupported()) {
+            Toast.makeText(this, getString(R.string.bt_not_supported), Toast.LENGTH_SHORT).show();
         } else {
-            discoverThermometer();
+            if (RelayrSdk.isBleAvailable()) {
+                discoverThermometer();
+            } else {
+                RelayrSdk.promptUserToActivateBluetooth(this);
+            }
         }
     }
 
@@ -70,27 +63,26 @@ public class ThermometerDemoActivity extends Activity {
     protected void onPause() {
         super.onPause();
 
-        if (mBTAdapter != null && mBTAdapter.isEnabled()) {
-            mBTAdapter.disable();
-        }
-
         unSubscribeToUpdates();
     }
 
     public void discoverThermometer() {
-        findViewById(R.id.thermometer_scanning).setVisibility(View.VISIBLE);
-
         // Search for WunderBar temp/humidity sensors
         // Take first that enables direct connection
-        mBleDevicesSubscription = RelayrSdk.getRelayrBleSdk().scan(Arrays.asList(BleDeviceType.WunderbarHTU))
+        mBleDevicesSubscription = RelayrSdk.getRelayrBleSdk()
+                .scan(Arrays.asList(BleDeviceType.WunderbarHTU))
                 .filter(new Func1<List<BleDevice>, Boolean>() {
                     @Override
                     public Boolean call(List<BleDevice> bleDevices) {
+                        boolean directMode = false;
+
                         for (BleDevice device : bleDevices) {
-                            return device.getMode() == BleDeviceMode.DIRECT_CONNECTION;
+                            if (device.getMode() == BleDeviceMode.DIRECT_CONNECTION) {
+                                directMode = true;
+                            }
                         }
 
-                        return false;
+                        return directMode;
                     }
                 })
                 .take(1)
@@ -103,14 +95,11 @@ public class ThermometerDemoActivity extends Activity {
 
                     @Override
                     public void onError(Throwable e) {
-                        mThError.setText(R.string.sensor_discovery_error);
-                        hideProgressBar();
+                        mThermometerError.setText(R.string.sensor_discovery_error);
                     }
 
                     @Override
                     public void onNext(List<BleDevice> bleDevices) {
-                        findViewById(R.id.thermometer_found).setVisibility(View.VISIBLE);
-
                         // We can stop scanning, since we've found some sensors
                         RelayrSdk.getRelayrBleSdk().stop();
 
@@ -120,8 +109,14 @@ public class ThermometerDemoActivity extends Activity {
     }
 
     //Get DirectConnectionService by connecting to device
-    private void connectToThermometer(BleDevice device) {
+    private void connectToThermometer(final BleDevice device) {
         mThuSubscription = device.connect()
+                .doOnUnsubscribe(new Action0() {
+                    @Override
+                    public void call() {
+//                        device.disconnect();
+                    }
+                })
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<BaseService>() {
@@ -131,14 +126,11 @@ public class ThermometerDemoActivity extends Activity {
 
                     @Override
                     public void onError(Throwable e) {
-                        mThError.setText(R.string.sensor_connection_error);
-                        hideProgressBar();
+                        mThermometerError.setText(R.string.sensor_connection_error);
                     }
 
                     @Override
                     public void onNext(BaseService service) {
-                        findViewById(R.id.thermometer_connected).setVisibility(View.VISIBLE);
-
                         final DirectConnectionService directConnection = (DirectConnectionService) service;
                         startReadingFromThermometer(directConnection);
                     }
@@ -157,40 +149,21 @@ public class ThermometerDemoActivity extends Activity {
 
                     @Override
                     public void onError(Throwable e) {
-                        mThError.setText(R.string.sensor_reading_error);
-                        hideProgressBar();
+                        mThermometerError.setText(R.string.sensor_reading_error);
                     }
 
                     @Override
                     public void onNext(String s) {
-                        hideProgressBar();
-
                         Reading reading = new Gson().fromJson(s, Reading.class);
 
-                        mThOutput.setText(reading.temp + "°C");
+                        mThermometerOutput.setText("" + reading.temp);
                     }
                 });
     }
 
-    private void hideProgressBar() {
-        if (mProgressBar != null && mProgressBar.getVisibility() == View.VISIBLE) {
-            mProgressBar.setVisibility(View.GONE);
-        }
-    }
-
     private void unSubscribeToUpdates() {
-        if (isSubscribed(mBleDevicesSubscription)) {
-            mBleDevicesSubscription.unsubscribe();
-        }
-        if (isSubscribed(mThuSubscription)) {
-            mThuSubscription.unsubscribe();
-        }
-        if (isSubscribed(mDirectConnSubscription)) {
-            mDirectConnSubscription.unsubscribe();
-        }
-    }
-
-    private static boolean isSubscribed(Subscription subscription) {
-        return subscription != null && !subscription.isUnsubscribed();
+        mBleDevicesSubscription.unsubscribe();
+        mThuSubscription.unsubscribe();
+        mDirectConnSubscription.unsubscribe();
     }
 }
