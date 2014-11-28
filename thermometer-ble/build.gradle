@@ -2,23 +2,22 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 21
-    buildToolsVersion "21.1.0"
+    buildToolsVersion '21.1.1'
 
     defaultConfig {
-        applicationId "io.relayr.demo.thermometer.directconnection"
+        applicationId 'io.relayr.demo.thermometer.directconnection'
         minSdkVersion 19
         targetSdkVersion 21
         versionCode 1
-        versionName "1.0"
+        versionName '1.0'
     }
     buildTypes {
         release {
             runProguard false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 }
 
 dependencies {
-    compile 'io.relayr:android-sdk:0.0.4'
+    compile 'io.relayr:android-sdk:0.0.5'
 }
