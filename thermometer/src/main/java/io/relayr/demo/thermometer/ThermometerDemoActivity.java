@@ -26,6 +26,7 @@ import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
+import rx.subscriptions.Subscriptions;
 
 public class ThermometerDemoActivity extends Activity implements LoginEventListener {
 
@@ -33,9 +34,8 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
     private TextView mTemperatureValueTextView;
     private TextView mTemperatureNameTextView;
     private TransmitterDevice mDevice;
-    private Subscription mUserInfoSubscription;
-    private Subscription mTemperatureDeviceSubscription;
-    private Subscription mWebSocketSubscription;
+    private Subscription mUserInfoSubscription = Subscriptions.empty();
+    private Subscription mTemperatureDeviceSubscription = Subscriptions.empty();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,18 +97,17 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
     }
 
     private void loadUserInfo() {
-        mUserInfoSubscription = RelayrSdk.getRelayrApi()
-                .getUserInfo()
+        mUserInfoSubscription = RelayrSdk.getRelayrApi().getUserInfo()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<User>() {
                     @Override
                     public void onCompleted() {
-
                     }
 
                     @Override
                     public void onError(Throwable e) {
+                        e.printStackTrace();
                         Toast.makeText(ThermometerDemoActivity.this, R.string.something_went_wrong,
                                 Toast.LENGTH_SHORT).show();
                     }
@@ -120,6 +119,7 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
                         loadTemperatureDevice(user);
                     }
                 });
+
     }
 
     private void loadTemperatureDevice(User user) {
@@ -140,11 +140,11 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
                 .subscribe(new Subscriber<List<TransmitterDevice>>() {
                     @Override
                     public void onCompleted() {
-
                     }
 
                     @Override
                     public void onError(Throwable e) {
+                        e.printStackTrace();
                         Toast.makeText(ThermometerDemoActivity.this, R.string.something_went_wrong,
                                 Toast.LENGTH_SHORT).show();
                     }
@@ -159,7 +159,6 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
                         }
                     }
                 });
-
     }
 
     @Override
@@ -168,26 +167,21 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
         unSubscribeToUpdates();
     }
 
-    private static boolean isSubscribed(Subscription subscription) {
-        return subscription != null && !subscription.isUnsubscribed();
-    }
-
     private void unSubscribeToUpdates() {
-        if (isSubscribed(mUserInfoSubscription)) {
+        if (!mUserInfoSubscription.isUnsubscribed())
             mUserInfoSubscription.unsubscribe();
-        }
-        if (isSubscribed(mTemperatureDeviceSubscription)) {
+        
+        if (!mTemperatureDeviceSubscription.isUnsubscribed())
             mTemperatureDeviceSubscription.unsubscribe();
-        }
-        if (isSubscribed(mWebSocketSubscription)) {
-            mWebSocketSubscription.unsubscribe();
+
+        if (mDevice != null) 
             RelayrSdk.getWebSocketClient().unSubscribe(mDevice.id);
-        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+
         if (RelayrSdk.isUserLoggedIn()) {
             updateUiForALoggedInUser();
         } else {
@@ -197,16 +191,15 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
 
     private void subscribeForTemperatureUpdates(TransmitterDevice device) {
         mDevice = device;
-        mWebSocketSubscription = RelayrSdk.getWebSocketClient()
-                .subscribe(device, new Subscriber<Object>() {
-
+        RelayrSdk.getWebSocketClient().subscribe(device)
+                .subscribe(new Subscriber<Object>() {
                     @Override
                     public void onCompleted() {
-
                     }
 
                     @Override
                     public void onError(Throwable e) {
+                        e.printStackTrace();
                         Toast.makeText(ThermometerDemoActivity.this, R.string.something_went_wrong,
                                 Toast.LENGTH_SHORT).show();
                     }
