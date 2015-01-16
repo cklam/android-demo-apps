@@ -97,8 +97,7 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
     }
 
     private void loadUserInfo() {
-        mUserInfoSubscription = RelayrSdk.getRelayrApi()
-                .getUserInfo()
+        mUserInfoSubscription = RelayrSdk.getRelayrApi().getUserInfo()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<User>() {
@@ -120,6 +119,7 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
                         loadTemperatureDevice(user);
                     }
                 });
+
     }
 
     private void loadTemperatureDevice(User user) {
@@ -170,11 +170,11 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
     private void unSubscribeToUpdates() {
         if (!mUserInfoSubscription.isUnsubscribed())
             mUserInfoSubscription.unsubscribe();
-
+        
         if (!mTemperatureDeviceSubscription.isUnsubscribed())
             mTemperatureDeviceSubscription.unsubscribe();
 
-        if (mDevice != null)
+        if (mDevice != null) 
             RelayrSdk.getWebSocketClient().unSubscribe(mDevice.id);
     }
 
