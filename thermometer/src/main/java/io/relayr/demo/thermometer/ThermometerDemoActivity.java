@@ -8,21 +8,17 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.gson.Gson;
-
 import java.util.ArrayList;
 import java.util.List;
 
 import io.relayr.LoginEventListener;
 import io.relayr.RelayrSdk;
 import io.relayr.model.DeviceModel;
-import io.relayr.model.Reading;
 import io.relayr.model.Transmitter;
 import io.relayr.model.TransmitterDevice;
 import io.relayr.model.User;
 import rx.Observable;
 import rx.Subscriber;
-import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
@@ -30,7 +26,6 @@ import rx.schedulers.Schedulers;
 public class ThermometerDemoActivity extends Activity implements LoginEventListener {
 
     private TextView mWelcomeTextView;
-    private Subscription mWebSocketSubscription;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,14 +83,12 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
     }
 
     private void loadUserInfo() {
-        RelayrSdk.getRelayrApi()
-                .getUserInfo()
+        RelayrSdk.getRelayrApi().getUserInfo()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<User>() {
                     @Override
                     public void onCompleted() {
-
                     }
 
                     @Override
@@ -131,7 +124,6 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
                 .subscribe(new Subscriber<List<TransmitterDevice>>() {
                     @Override
                     public void onCompleted() {
-
                     }
 
                     @Override
@@ -150,7 +142,6 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
                         }
                     }
                 });
-
     }
 
     @Override
