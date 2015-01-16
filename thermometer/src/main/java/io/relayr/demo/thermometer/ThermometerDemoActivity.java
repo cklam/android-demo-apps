@@ -188,6 +188,7 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
     @Override
     protected void onResume() {
         super.onResume();
+        
         if (RelayrSdk.isUserLoggedIn()) {
             updateUiForALoggedInUser();
         } else {
@@ -197,12 +198,10 @@ public class ThermometerDemoActivity extends Activity implements LoginEventListe
 
     private void subscribeForTemperatureUpdates(TransmitterDevice device) {
         mDevice = device;
-        mWebSocketSubscription = RelayrSdk.getWebSocketClient()
-                .subscribe(device, new Subscriber<Object>() {
-
+        mWebSocketSubscription = RelayrSdk.getWebSocketClient().subscribe(device)
+                .subscribe(new Subscriber<Object>() {
                     @Override
                     public void onCompleted() {
-
                     }
 
                     @Override
