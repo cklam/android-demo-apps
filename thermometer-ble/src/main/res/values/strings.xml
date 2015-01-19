@@ -10,5 +10,7 @@
     <string name="bt_not_supported">Bluetooth not supported</string>
 
     <string name="celsius">°C</string>
+    <string name="device_unsubscribing">Unsubscribe THU device</string>
+    <string name="thermometer_not_found">No thermometer found in DIRRECT_CONNECTION mode</string>
 
 </resources>
