@@ -2,6 +2,7 @@ package io.hackthehouse;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -16,7 +17,10 @@ import io.relayr.LoginEventListener;
 import io.relayr.RelayrSdk;
 import io.relayr.model.Command;
 import io.relayr.model.Device;
+import io.relayr.model.DeviceModel;
 import io.relayr.model.Model;
+import io.relayr.model.ModelCommand;
+import io.relayr.model.ModelReading;
 import io.relayr.model.Reading;
 import io.relayr.model.TransmitterDevice;
 import io.relayr.model.User;
@@ -85,7 +89,6 @@ public class HthActivity extends Activity implements LoginEventListener {
     public void onSuccessUserLogIn() {
         Toast.makeText(this, "Logged in", Toast.LENGTH_SHORT).show();
         invalidateOptionsMenu();
-        updateUiForALoggedInUser();
     }
 
     @Override
@@ -108,6 +111,8 @@ public class HthActivity extends Activity implements LoginEventListener {
     }
 
     private void updateUiForALoggedInUser() {
+        //Use to list all available device models
+        listDeviceModels();
         loadUserInfo();
     }
 
@@ -127,39 +132,17 @@ public class HthActivity extends Activity implements LoginEventListener {
 
                     @Override
                     public void onNext(final User user) {
+                        Log.i("HTH", "Loaded user: " + user.getName());
                         mTextView.setText("Hello " + user.getName());
-                        getModels(user.id);
-                    }
-                });
-    }
 
-    public void getModels(final String userId) {
-        RelayrSdk.getRelayrApi()
-                .getDeviceModels()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<List<Model>>() {
-                    @Override
-                    public void onCompleted() {
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        e.printStackTrace();
-                    }
-
-                    @Override
-                    public void onNext(List<Model> models) {
-                        for (Model model : models) {
-                            if (model.getName().equals("Bosch oven")) {
-                                mTextView.setText("Model found");
-                                loadDeviceByModelId(userId, model.getId());
-                            }
-                        }
+                        loadDeviceByModelId(user.id, DeviceModel.BOSCH_OVEN.getId());
                     }
                 });
     }
 
     private void loadDeviceByModelId(String userId, final String modelId) {
+        Log.i("HTH", "Loading devices...");
+
         RelayrSdk.getRelayrApi()
                 .getUserDevices(userId)
                 .observeOn(AndroidSchedulers.mainThread())
@@ -177,9 +160,12 @@ public class HthActivity extends Activity implements LoginEventListener {
                     public void onNext(List<Device> devices) {
                         for (Device device : devices) {
                             if (device.getModel().getId().equals(modelId)) {
-                                mTextView.setText("Device found");
-                                subscribeForUpdates(new TransmitterDevice(device.id, device.getSecret(),
-                                        device.getOwner(), device.getName(), modelId));
+                                mTextView.setText("Device found.");
+                                Log.i("HTH", "Found device: " + device.getName());
+
+                                sendDeviceCommand(device.id, modelId);
+                                subscribeForUpdates(device.toTransmitterDevice());
+                                break;
                             }
                         }
                     }
@@ -188,7 +174,8 @@ public class HthActivity extends Activity implements LoginEventListener {
 
     private void subscribeForUpdates(final TransmitterDevice transmitterDevice) {
         mDevice = transmitterDevice;
-        mTextView.setText("Waiting for readings.");
+        mTextView.setText("Waiting for readings...");
+        Log.i("HTH", "Waiting for readings...");
 
         RelayrSdk.getWebSocketClient()
                 .subscribe(transmitterDevice)
@@ -202,20 +189,62 @@ public class HthActivity extends Activity implements LoginEventListener {
                     @Override
                     public void onError(Throwable e) {
                         mTextView.setText("Readings failed.");
+                        Log.e("HTH", "Readings failed!");
                         e.printStackTrace();
                     }
 
                     @Override
                     public void onNext(Object o) {
                         final Reading reading = new Gson().fromJson(o.toString(), Reading.class);
-                        for (Reading.Data data : reading.readings)
-                            mTextView.setText("path:" + data.path + " - meaning: " + 
-                                    data.meaning + " - data: " + data.value);
+                        for (Reading.Data data : reading.readings) {
+                            Log.i("HTH", "p: " + data.path + " - m: " + data.meaning + " - d: " + data.value);
+                            
+                            mTextView.setText("path:" + data.path + "\nmeaning: " +
+                                    data.meaning + "\ndata: " + data.value);
+                        }
                     }
                 });
     }
 
-    private void sendCommand(String deviceId, Command command) {
+    private void sendDeviceCommand(final String deviceId, final String modelId) {
+        Log.i("HTH", "Loading model for deviceId: " + deviceId);
+        RelayrSdk.getRelayrApi()
+                .getDeviceModel(modelId)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<Model>() {
+                    @Override
+                    public void onCompleted() {
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Log.e("HTH", "Load device model failed.");
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onNext(Model model) {
+                        Log.i("HTH", "Device model loaded.");
+
+                        //get definition of first command for the Bosch oven
+                        final ModelCommand modelCommand = model.getCommands().get(1);
+                        Log.i("HTH", "Device model contains " + model.getCommands().size() + " commands.");
+
+                        //create device command
+                        final Command command = new Command(modelCommand.path, modelCommand.command, modelCommand.minimum);
+                        //send command to device
+                        sendCommand(deviceId, command);
+                    }
+                });
+    }
+
+    /**
+     * Sends a command to a device (see listDeviceModels() for list of commands)
+     */
+    private void sendCommand(String deviceId, final Command command) {
+        mTextView.setText("Sending command " + command.command);
+        Log.i("HTH", "Sending command " + command.command);
+
         RelayrSdk.getRelayrApi()
                 .sendCommand(deviceId, command)
                 .subscribeOn(Schedulers.io())
@@ -223,18 +252,53 @@ public class HthActivity extends Activity implements LoginEventListener {
                 .subscribe(new Observer<Void>() {
                     @Override
                     public void onCompleted() {
-                        mTextView.setText("Command send.");
+                        mTextView.setText("Command sent.");
                     }
 
                     @Override
                     public void onError(Throwable e) {
-                        mTextView.setText("Command NOT send.");
+                        mTextView.setText("Command NOT sent.");
+                        Log.e("HTH", "Command '" + command.command + "' not sent.");
                         e.printStackTrace();
                     }
 
                     @Override
                     public void onNext(Void aVoid) {
-                        mTextView.setText("Command send.");
+                        mTextView.setText("Command sent.");
+                        Log.i("HTH", "Command '" + command.command + "' sent successfully.");
+                    }
+                });
+    }
+
+    /**
+     * Lists all supported device models with available readings and commands.
+     */
+    private void listDeviceModels() {
+        Log.i("HTH", "Listing device models...");
+
+        RelayrSdk.getRelayrApi()
+                .getDeviceModels()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<List<Model>>() {
+                    @Override
+                    public void onCompleted() {
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onNext(List<Model> models) {
+                        for (Model model : models) {
+                            for (ModelReading modelReading : model.getReadings()) {
+                                Log.d(model.getName(), modelReading.toString());
+                            }
+                            for (ModelCommand modelCommand : model.getCommands()) {
+                                Log.d(model.getName(), modelCommand.toString());
+                            }
+                        }
                     }
                 });
     }
