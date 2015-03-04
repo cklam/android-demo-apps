@@ -88,7 +88,7 @@ public class ThermometerDemoActivity extends Activity {
                     @Override
                     public void onNext(User user) {
                         Toast.makeText(ThermometerDemoActivity.this,
-                                R.string.unsuccessfully_logged_in, Toast.LENGTH_SHORT).show();
+                                R.string.successfully_logged_in, Toast.LENGTH_SHORT).show();
                         invalidateOptionsMenu();
                         updateUiForALoggedInUser();
                     }
@@ -171,7 +171,5 @@ public class ThermometerDemoActivity extends Activity {
                         }
                     }
                 });
-
     }
-
 }
