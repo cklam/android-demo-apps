@@ -1,2 +1,2 @@
-include ':thermometer', ':thermometer-ble', ':hackthehouse'
+include ':thermometer', ':thermometer-ble', ':hackthehouse', ':cloud-relay'
 
