@@ -4,13 +4,14 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import io.relayr.LoginEventListener;
 import io.relayr.RelayrSdk;
 import io.relayr.model.User;
-import rx.Subscriber;
 import rx.Observer;
+import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 
