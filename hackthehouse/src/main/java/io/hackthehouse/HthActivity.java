@@ -13,7 +13,6 @@ import com.google.gson.Gson;
 
 import java.util.List;
 
-import io.relayr.LoginEventListener;
 import io.relayr.RelayrSdk;
 import io.relayr.model.Command;
 import io.relayr.model.Device;
@@ -30,7 +29,7 @@ import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 
-public class HthActivity extends Activity implements LoginEventListener {
+public class HthActivity extends Activity {
 
     private TextView mTextView;
     private Subscription mUserInfoSubscription;
@@ -45,7 +44,7 @@ public class HthActivity extends Activity implements LoginEventListener {
 
         setContentView(view);
 
-        if (!RelayrSdk.isUserLoggedIn()) RelayrSdk.logIn(this, this);
+        if (!RelayrSdk.isUserLoggedIn()) logIn();
     }
 
     @Override
@@ -62,7 +61,7 @@ public class HthActivity extends Activity implements LoginEventListener {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.action_log_in) {
-            RelayrSdk.logIn(this, this);
+            logIn();
             return true;
         } else if (item.getItemId() == R.id.action_log_out) {
             logOut();
@@ -85,16 +84,26 @@ public class HthActivity extends Activity implements LoginEventListener {
         unSubscribeToUpdates();
     }
 
-    @Override
-    public void onSuccessUserLogIn() {
-        Toast.makeText(this, "Logged in", Toast.LENGTH_SHORT).show();
-        invalidateOptionsMenu();
-    }
+    private void logIn() {
+        RelayrSdk.logIn(this)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<User>() {
+                    @Override
+                    public void onCompleted() {
+                    }
 
-    @Override
-    public void onErrorLogin(Throwable e) {
-        Toast.makeText(this, "Not logged in", Toast.LENGTH_SHORT).show();
-        updateUiForANonLoggedInUser();
+                    @Override
+                    public void onError(Throwable e) {
+                        Toast.makeText(HthActivity.this, "Not logged in", Toast.LENGTH_SHORT).show();
+                        updateUiForANonLoggedInUser();
+                    }
+
+                    @Override
+                    public void onNext(User user) {
+                        Toast.makeText(HthActivity.this, "Logged in", Toast.LENGTH_SHORT).show();
+                        invalidateOptionsMenu();
+                    }
+                });
     }
 
     private void logOut() {
@@ -160,10 +169,8 @@ public class HthActivity extends Activity implements LoginEventListener {
                     public void onNext(List<Device> devices) {
                         for (Device device : devices) {
                             if (device.getModel().getId().equals(modelId)) {
-                                mTextView.setText("Device found.");
                                 Log.i("HTH", "Found device: " + device.getName());
 
-                                sendDeviceCommand(device.id, modelId);
                                 subscribeForUpdates(device.toTransmitterDevice());
                                 break;
                             }
@@ -175,7 +182,6 @@ public class HthActivity extends Activity implements LoginEventListener {
     private void subscribeForUpdates(final TransmitterDevice transmitterDevice) {
         mDevice = transmitterDevice;
         mTextView.setText("Waiting for readings...");
-        Log.i("HTH", "Waiting for readings...");
 
         RelayrSdk.getWebSocketClient()
                 .subscribe(transmitterDevice)
@@ -183,7 +189,6 @@ public class HthActivity extends Activity implements LoginEventListener {
                 .subscribe(new Observer<Object>() {
                     @Override
                     public void onCompleted() {
-                        mTextView.setText("Readings complete.");
                     }
 
                     @Override
@@ -196,12 +201,9 @@ public class HthActivity extends Activity implements LoginEventListener {
                     @Override
                     public void onNext(Object o) {
                         final Reading reading = new Gson().fromJson(o.toString(), Reading.class);
-                        for (Reading.Data data : reading.readings) {
-                            Log.i("HTH", "p: " + data.path + " - m: " + data.meaning + " - d: " + data.value);
-                            
-                            mTextView.setText("path:" + data.path + "\nmeaning: " +
-                                    data.meaning + "\ndata: " + data.value);
-                        }
+                        mTextView.setText("path:" + reading.path +
+                                "\nmeaning: " + reading.meaning +
+                                "\ndata: " + reading.value);
                     }
                 });
     }
