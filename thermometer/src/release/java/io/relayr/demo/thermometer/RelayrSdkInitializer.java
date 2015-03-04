@@ -7,6 +7,6 @@ import io.relayr.RelayrSdk;
 public class RelayrSdkInitializer {
 
     static void initSdk(Context context) {
-        new RelayrSdk.Builder(context).inMockMode(false).build();    }
+        new RelayrSdk.Builder(context).build();    }
 
 }

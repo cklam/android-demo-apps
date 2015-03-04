@@ -3,11 +3,8 @@ package io.relayr.demo.thermometer.directconnection;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.google.gson.Gson;
 
 import java.util.Arrays;
 import java.util.List;
@@ -20,6 +17,7 @@ import io.relayr.ble.service.BaseService;
 import io.relayr.ble.service.DirectConnectionService;
 import io.relayr.model.Reading;
 import rx.Observable;
+import rx.Observer;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
@@ -28,8 +26,6 @@ import rx.functions.Func1;
 import rx.subscriptions.Subscriptions;
 
 public class ThermometerDemoActivity extends Activity {
-
-    private static final String TAG = "io.relayr.directconnection.ThermometerDemoActivity";
 
     private TextView mThermometerOutput;
     private TextView mThermometerError;
@@ -85,7 +81,7 @@ public class ThermometerDemoActivity extends Activity {
                                 return true;
                             }
                         }
-                      
+
                         mStartedScanning = false;
                         return false;
                     }
@@ -127,9 +123,9 @@ public class ThermometerDemoActivity extends Activity {
     private void subscribeForTemperatureUpdates(final BleDevice device) {
         mDevice = device;
         mDeviceSubscription = device.connect()
-                .flatMap(new Func1<BaseService, Observable<String>>() {
+                .flatMap(new Func1<BaseService, Observable<Reading>>() {
                     @Override
-                    public Observable<String> call(BaseService baseService) {
+                    public Observable<Reading> call(BaseService baseService) {
                         return ((DirectConnectionService) baseService).getReadings();
                     }
                 })
@@ -141,7 +137,7 @@ public class ThermometerDemoActivity extends Activity {
                 })
                 .subscribeOn(AndroidSchedulers.mainThread())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Subscriber<String>() {
+                .subscribe(new Observer<Reading>() {
                     @Override
                     public void onCompleted() {
                         mStartedScanning = false;
@@ -154,9 +150,8 @@ public class ThermometerDemoActivity extends Activity {
                     }
 
                     @Override
-                    public void onNext(String s) {
-                        Reading reading = new Gson().fromJson(s, Reading.class);
-                        mThermometerOutput.setText("" + reading.temp);
+                    public void onNext(Reading reading) {
+                        mThermometerOutput.setText("" + reading.value);
                     }
                 });
     }
@@ -164,6 +159,8 @@ public class ThermometerDemoActivity extends Activity {
     private void unSubscribeToUpdates() {
         mScannerSubscription.unsubscribe();
         mDeviceSubscription.unsubscribe();
+
+        if (mDevice != null) mDevice.disconnect();
     }
 
     private void disconnectBluetooth() {

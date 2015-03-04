@@ -59,11 +59,10 @@ public class ThermometerDemoActivity extends Activity {
     public boolean onPrepareOptionsMenu(Menu menu) {
         menu.clear();
 
-        if (RelayrSdk.isUserLoggedIn()) {
+        if (RelayrSdk.isUserLoggedIn())
             getMenuInflater().inflate(R.menu.thermometer_demo_logged_in, menu);
-        } else {
+        else
             getMenuInflater().inflate(R.menu.thermometer_demo_not_logged_in, menu);
-        }
 
         return super.onPrepareOptionsMenu(menu);
     }
@@ -93,15 +92,13 @@ public class ThermometerDemoActivity extends Activity {
 
                     @Override
                     public void onError(Throwable e) {
-                        Toast.makeText(ThermometerDemoActivity.this,
-                                R.string.unsuccessfully_logged_in, Toast.LENGTH_SHORT).show();
+                        showToast(R.string.unsuccessfully_logged_in);
                         updateUiForANonLoggedInUser();
                     }
 
                     @Override
                     public void onNext(User user) {
-                        Toast.makeText(ThermometerDemoActivity.this,
-                                R.string.successfully_logged_in, Toast.LENGTH_SHORT).show();
+                        showToast(R.string.successfully_logged_in);
                         invalidateOptionsMenu();
                         updateUiForALoggedInUser();
                     }
@@ -139,9 +136,8 @@ public class ThermometerDemoActivity extends Activity {
 
                     @Override
                     public void onError(Throwable e) {
+                        showToast(R.string.something_went_wrong);
                         e.printStackTrace();
-                        Toast.makeText(ThermometerDemoActivity.this, R.string.something_went_wrong,
-                                Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
@@ -163,11 +159,10 @@ public class ThermometerDemoActivity extends Activity {
                         // kinds of transmitter.
                         if (transmitters.isEmpty())
                             return Observable.from(new ArrayList<List<TransmitterDevice>>());
-                        return RelayrSdk.getRelayrApi().getTransmitterDevices(transmitters.get(9)
+                        return RelayrSdk.getRelayrApi().getTransmitterDevices(transmitters.get(0)
                                 .id);
                     }
                 })
-                .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<List<TransmitterDevice>>() {
                     @Override
@@ -176,8 +171,7 @@ public class ThermometerDemoActivity extends Activity {
 
                     @Override
                     public void onError(Throwable e) {
-                        Toast.makeText(ThermometerDemoActivity.this, R.string.something_went_wrong,
-                                Toast.LENGTH_SHORT).show();
+                        showToast(R.string.something_went_wrong);
                         e.printStackTrace();
                     }
 
@@ -214,11 +208,10 @@ public class ThermometerDemoActivity extends Activity {
     protected void onResume() {
         super.onResume();
 
-        if (RelayrSdk.isUserLoggedIn()) {
+        if (RelayrSdk.isUserLoggedIn())
             updateUiForALoggedInUser();
-        } else {
+        else
             updateUiForANonLoggedInUser();
-        }
     }
 
     private void subscribeForTemperatureUpdates(TransmitterDevice device) {
@@ -232,8 +225,7 @@ public class ThermometerDemoActivity extends Activity {
 
                     @Override
                     public void onError(Throwable e) {
-                        Toast.makeText(ThermometerDemoActivity.this, R.string.something_went_wrong,
-                                Toast.LENGTH_SHORT).show();
+                        showToast(R.string.something_went_wrong);
                         e.printStackTrace();
                     }
 
@@ -243,5 +235,9 @@ public class ThermometerDemoActivity extends Activity {
                             mTemperatureValueTextView.setText(reading.value + "˚C");
                     }
                 });
+    }
+
+    private void showToast(int stringId) {
+        Toast.makeText(ThermometerDemoActivity.this, stringId, Toast.LENGTH_SHORT).show();
     }
 }
