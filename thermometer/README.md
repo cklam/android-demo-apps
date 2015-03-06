@@ -2,6 +2,8 @@
 
 The relayr thermometer app uses the Temperature and Humidity sensor and the relayr Cloud Platform in order to display the temperature reading in the environmnet where the sensor is placed. This repository is built as a step by step sequesnce which allows you to see the different stages of creating the app. Please note tha each branch contains a different step. You can see the different code omissions and additions by clicking on the branch name. 
 
+Check out the BLE Direct Connection version of the thermometer [here](https://github.com/relayr/android-demo-apps/tree/master/thermometer-ble) 
+
 ## A Note about Build Types
 
 Android Studio uses **Gradle** for the app build process. 
