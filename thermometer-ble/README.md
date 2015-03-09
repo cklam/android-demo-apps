@@ -11,5 +11,7 @@ is not used.
 3. Swipe to the lef
 4. turn on the BLE Direct Connection option
 
+<img src="assets/BLEON.png" width=300px>
+
 
 Check out the version of the thermometer utilizing the relayr cloud platform [here](https://github.com/relayr/android-demo-apps/tree/master/thermometer)
