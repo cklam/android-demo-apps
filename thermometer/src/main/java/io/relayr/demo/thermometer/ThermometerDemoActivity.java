@@ -6,8 +6,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import io.relayr.RelayrSdk;
-import io.relayr.model.User;
+import io.relayr.android.RelayrSdk;
+import io.relayr.java.model.User;
 import rx.Observer;
 import rx.android.schedulers.AndroidSchedulers;
 
