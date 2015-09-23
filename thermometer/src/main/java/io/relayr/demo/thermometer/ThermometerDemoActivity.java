@@ -11,11 +11,11 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.relayr.RelayrSdk;
-import io.relayr.model.DeviceModel;
-import io.relayr.model.Transmitter;
-import io.relayr.model.TransmitterDevice;
-import io.relayr.model.User;
+import io.relayr.android.RelayrSdk;
+import io.relayr.java.model.Transmitter;
+import io.relayr.java.model.TransmitterDevice;
+import io.relayr.java.model.User;
+import io.relayr.java.model.models.error.DeviceModelsCacheException;
 import rx.Observable;
 import rx.Observer;
 import rx.Subscriber;
@@ -111,7 +111,7 @@ public class ThermometerDemoActivity extends Activity {
     }
 
     private void loadUserInfo() {
-        RelayrSdk.getRelayrApi().getUserInfo()
+        RelayrSdk.getUser()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<User>() {
@@ -135,8 +135,7 @@ public class ThermometerDemoActivity extends Activity {
     }
 
     private void loadTemperatureDevice(User user) {
-        RelayrSdk.getRelayrApi()
-                .getTransmitters(user.id)
+        user.getTransmitters()
                 .flatMap(new Func1<List<Transmitter>, Observable<List<TransmitterDevice>>>() {
                     @Override
                     public Observable<List<TransmitterDevice>> call(List<Transmitter> transmitters) {
@@ -144,7 +143,7 @@ public class ThermometerDemoActivity extends Activity {
                         // kinds of transmitter.
                         if (transmitters.isEmpty())
                             return Observable.from(new ArrayList<List<TransmitterDevice>>());
-                        return RelayrSdk.getRelayrApi().getTransmitterDevices(transmitters.get(0).id);
+                        return RelayrSdk.getRelayrApi().getTransmitterDevices(transmitters.get(0).getId());
                     }
                 })
                 .subscribeOn(Schedulers.io())
@@ -163,11 +162,17 @@ public class ThermometerDemoActivity extends Activity {
 
                     @Override
                     public void onNext(List<TransmitterDevice> devices) {
-                        for (TransmitterDevice device : devices) {
-                            if (device.model.equals(DeviceModel.TEMPERATURE_HUMIDITY.getId())) {
-                                // TODO: subscribeForTemperatureUpdates(device);
-                                return;
+                        try {
+                            String modelId = RelayrSdk.getDeviceModelsCache()
+                                    .getModelByName("Wunderbar Thermometer").getId();
+                            for (TransmitterDevice device : devices) {
+                                if (device.getModelId().equals(modelId)) {
+                                    // TODO: subscribeForTemperatureUpdates(device);
+                                    return;
+                                }
                             }
+                        } catch (DeviceModelsCacheException e) {
+                            e.printStackTrace();
                         }
                     }
                 });
