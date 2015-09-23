@@ -2,7 +2,7 @@ package io.relayr.demo.thermometer;
 
 import android.content.Context;
 
-import io.relayr.RelayrSdk;
+import io.relayr.android.RelayrSdk;
 
 public class RelayrSdkInitializer {
 
