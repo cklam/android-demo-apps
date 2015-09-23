@@ -8,8 +8,8 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import io.relayr.RelayrSdk;
-import io.relayr.model.User;
+import io.relayr.android.RelayrSdk;
+import io.relayr.java.model.User;
 import rx.Observer;
 import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
