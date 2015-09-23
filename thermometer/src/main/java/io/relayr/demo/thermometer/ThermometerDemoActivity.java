@@ -103,7 +103,7 @@ public class ThermometerDemoActivity extends Activity {
     }
 
     private void loadUserInfo() {
-        RelayrSdk.getRelayrApi().getUserInfo()
+        RelayrSdk.getUser()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<User>() {
