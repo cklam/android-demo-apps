@@ -2,7 +2,7 @@ package io.hackthehouse;
 
 import android.content.Context;
 
-import io.relayr.RelayrSdk;
+import io.relayr.android.RelayrSdk;
 
 abstract class RelayrSdkInitializer {
 

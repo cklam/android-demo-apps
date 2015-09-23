@@ -2,7 +2,7 @@ package io.relayr.cloud_relay;
 
 import android.app.Application;
 
-import io.relayr.RelayrSdk;
+import io.relayr.android.RelayrSdk;
 
 public class CloudRelayApplication extends Application {
 

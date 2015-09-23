@@ -13,16 +13,16 @@ import com.google.gson.Gson;
 
 import java.util.List;
 
-import io.relayr.RelayrSdk;
-import io.relayr.model.Command;
-import io.relayr.model.Device;
-import io.relayr.model.DeviceModel;
-import io.relayr.model.Model;
-import io.relayr.model.ModelCommand;
-import io.relayr.model.ModelReading;
-import io.relayr.model.Reading;
-import io.relayr.model.TransmitterDevice;
-import io.relayr.model.User;
+import io.relayr.android.RelayrSdk;
+import io.relayr.java.model.Device;
+import io.relayr.java.model.TransmitterDevice;
+import io.relayr.java.model.User;
+import io.relayr.java.model.action.Command;
+import io.relayr.java.model.action.Reading;
+import io.relayr.java.model.models.DeviceModel;
+import io.relayr.java.model.models.error.DeviceModelsCacheException;
+import io.relayr.java.model.models.error.DeviceModelsException;
+import io.relayr.java.model.models.transport.DeviceCommand;
 import rx.Observer;
 import rx.Subscriber;
 import rx.Subscription;
@@ -120,14 +120,11 @@ public class HthActivity extends Activity {
     }
 
     private void updateUiForALoggedInUser() {
-        //Use to list all available device models
-        listDeviceModels();
         loadUserInfo();
     }
 
     private void loadUserInfo() {
-        mUserInfoSubscription = RelayrSdk.getRelayrApi()
-                .getUserInfo()
+        mUserInfoSubscription = RelayrSdk.getUser()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<User>() {
                     @Override
@@ -144,16 +141,19 @@ public class HthActivity extends Activity {
                         Log.i("HTH", "Loaded user: " + user.getName());
                         mTextView.setText("Hello " + user.getName());
 
-                        loadDeviceByModelId(user.id, DeviceModel.BOSCH_OVEN.getId());
+                        try {
+                            loadDeviceByModelId(user, RelayrSdk.getDeviceModelsCache().getModelByName("Bosh Oven").getId());
+                        } catch (DeviceModelsCacheException e) {
+                            e.printStackTrace();
+                        }
                     }
                 });
     }
 
-    private void loadDeviceByModelId(String userId, final String modelId) {
+    private void loadDeviceByModelId(User user, final String modelId) {
         Log.i("HTH", "Loading devices...");
 
-        RelayrSdk.getRelayrApi()
-                .getUserDevices(userId)
+        user.getDevices()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<List<Device>>() {
                     @Override
@@ -168,7 +168,7 @@ public class HthActivity extends Activity {
                     @Override
                     public void onNext(List<Device> devices) {
                         for (Device device : devices) {
-                            if (device.getModel().getId().equals(modelId)) {
+                            if (device.getModelId().equals(modelId)) {
                                 Log.i("HTH", "Found device: " + device.getName());
 
                                 subscribeForUpdates(device.toTransmitterDevice());
@@ -184,7 +184,7 @@ public class HthActivity extends Activity {
         mTextView.setText("Waiting for readings...");
 
         RelayrSdk.getWebSocketClient()
-                .subscribe(transmitterDevice)
+                .subscribe(transmitterDevice.getId())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<Object>() {
                     @Override
@@ -208,44 +208,27 @@ public class HthActivity extends Activity {
                 });
     }
 
-    private void sendDeviceCommand(final String deviceId, final String modelId) {
+    private void sendDeviceCommand(final String deviceId, final String modelId) throws DeviceModelsException {
         Log.i("HTH", "Loading model for deviceId: " + deviceId);
-        RelayrSdk.getRelayrApi()
-                .getDeviceModel(modelId)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<Model>() {
-                    @Override
-                    public void onCompleted() {
-                    }
+        DeviceModel model = RelayrSdk.getDeviceModelsCache().getModelById(modelId);
 
-                    @Override
-                    public void onError(Throwable e) {
-                        Log.e("HTH", "Load device model failed.");
-                        e.printStackTrace();
-                    }
+        Log.i("HTH", "Device model loaded.");
 
-                    @Override
-                    public void onNext(Model model) {
-                        Log.i("HTH", "Device model loaded.");
+        //get definition of first command for the Bosch oven
+        DeviceCommand deviceCommand = model.getLatestFirmware().getDefaultTransport().getCommands().get(1);
+        Log.i("HTH", "Device model contains " + model.getLatestFirmware().getDefaultTransport().getCommands().size() + " commands.");
 
-                        //get definition of first command for the Bosch oven
-                        final ModelCommand modelCommand = model.getCommands().get(1);
-                        Log.i("HTH", "Device model contains " + model.getCommands().size() + " commands.");
-
-                        //create device command
-                        final Command command = new Command(modelCommand.path, modelCommand.command, modelCommand.minimum);
-                        //send command to device
-                        sendCommand(deviceId, command);
-                    }
-                });
+        //create device command
+        final Command command = new Command(deviceCommand.getPath(), deviceCommand.getName(), deviceCommand.getValueSchema().asInteger().getMin());
+        //send command to device
+        sendCommand(deviceId, command);
     }
 
     /**
      * Sends a command to a device (see listDeviceModels() for list of commands)
      */
     private void sendCommand(String deviceId, final Command command) {
-        mTextView.setText("Sending command " + command.command);
-        Log.i("HTH", "Sending command " + command.command);
+        mTextView.setText("Sending command " + command.toString());
 
         RelayrSdk.getRelayrApi()
                 .sendCommand(deviceId, command)
@@ -260,47 +243,14 @@ public class HthActivity extends Activity {
                     @Override
                     public void onError(Throwable e) {
                         mTextView.setText("Command NOT sent.");
-                        Log.e("HTH", "Command '" + command.command + "' not sent.");
+                        Log.e("HTH", "Command '" + command.toString() + "' not sent.");
                         e.printStackTrace();
                     }
 
                     @Override
                     public void onNext(Void aVoid) {
                         mTextView.setText("Command sent.");
-                        Log.i("HTH", "Command '" + command.command + "' sent successfully.");
-                    }
-                });
-    }
-
-    /**
-     * Lists all supported device models with available readings and commands.
-     */
-    private void listDeviceModels() {
-        Log.i("HTH", "Listing device models...");
-
-        RelayrSdk.getRelayrApi()
-                .getDeviceModels()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<List<Model>>() {
-                    @Override
-                    public void onCompleted() {
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        e.printStackTrace();
-                    }
-
-                    @Override
-                    public void onNext(List<Model> models) {
-                        for (Model model : models) {
-                            for (ModelReading modelReading : model.getReadings()) {
-                                Log.d(model.getName(), modelReading.toString());
-                            }
-                            for (ModelCommand modelCommand : model.getCommands()) {
-                                Log.d(model.getName(), modelCommand.toString());
-                            }
-                        }
+                        Log.i("HTH", "Command '" + command.toString() + "' sent successfully.");
                     }
                 });
     }
@@ -314,6 +264,6 @@ public class HthActivity extends Activity {
             mUserInfoSubscription.unsubscribe();
 
         if (mDevice != null)
-            RelayrSdk.getWebSocketClient().unSubscribe(mDevice.id);
+            RelayrSdk.getWebSocketClient().unSubscribe(mDevice.getId());
     }
 }
