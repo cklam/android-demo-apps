@@ -21,5 +21,5 @@ android {
 
 dependencies {
     compile 'io.relayr:android-sdk:1.0.2'
-    compile 'io.relayr:java-sdk:1.0.2'
+    compile 'io.relayr:java-sdk:1.0.3'
 }

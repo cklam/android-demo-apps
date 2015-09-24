@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Device publish</string>
+    <string name="hello">Hello %s!</string>
+    <string name="hello_relayr">Hello Relayrer!</string>
+    <string name="action_log_in">Log in</string>
+    <string name="action_log_out">Log out</string>
+    <string name="successfully_logged_in">You were successfully logged in!</string>
+    <string name="successfully_logged_out">You were successfully logged out!</string>
+    <string name="unsuccessfully_logged_in">There was a problem in the log in.</string>
+    <string name="something_went_wrong">Oops! Something went wrong</string>
+    <string name="device_creation_failed">Device creation failed. Please try again</string>
+    <string name="device_created">Device - %s - created successfully.</string>
+    <string name="subscribed_to_device">Subscribed to dummy device</string>
+    <string name="subscribed_to_device_failed">Subscribing to device failed</string>
+
+</resources>

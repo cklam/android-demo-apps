@@ -5,7 +5,7 @@ android {
     buildToolsVersion "23.0.1"
 
     defaultConfig {
-        applicationId "io.relayr.cloud_relay"
+        applicationId "io.relayr.devicepublish"
         minSdkVersion 15
         targetSdkVersion 23
         versionCode 1
