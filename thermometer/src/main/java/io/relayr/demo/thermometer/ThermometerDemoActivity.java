@@ -18,20 +18,17 @@ public class ThermometerDemoActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_thermometer_demo);
 
-        if (!RelayrSdk.isUserLoggedIn()) {
-            logIn();
-        }
+        if (!RelayrSdk.isUserLoggedIn()) logIn();
     }
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         menu.clear();
 
-        if (RelayrSdk.isUserLoggedIn()) {
+        if (RelayrSdk.isUserLoggedIn())
             getMenuInflater().inflate(R.menu.thermometer_demo_logged_in, menu);
-        } else {
+        else
             getMenuInflater().inflate(R.menu.thermometer_demo_not_logged_in, menu);
-        }
 
         return super.onPrepareOptionsMenu(menu);
     }
@@ -63,12 +60,13 @@ public class ThermometerDemoActivity extends Activity {
                     public void onError(Throwable e) {
                         Toast.makeText(ThermometerDemoActivity.this,
                                 R.string.unsuccessfully_logged_in, Toast.LENGTH_SHORT).show();
+                        e.printStackTrace();
                     }
 
                     @Override
                     public void onNext(User user) {
                         Toast.makeText(ThermometerDemoActivity.this,
-                                R.string.unsuccessfully_logged_in, Toast.LENGTH_SHORT).show();
+                                R.string.successfully_logged_in, Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -77,5 +75,6 @@ public class ThermometerDemoActivity extends Activity {
         RelayrSdk.logOut();
         invalidateOptionsMenu();
         Toast.makeText(this, R.string.successfully_logged_out, Toast.LENGTH_SHORT).show();
+        logIn();
     }
 }
