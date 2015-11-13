@@ -2,6 +2,8 @@ package io.relayr.demo.thermometer;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -10,6 +12,7 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import io.relayr.android.RelayrSdk;
 import io.relayr.java.model.Transmitter;
@@ -23,7 +26,6 @@ import rx.Subscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 import rx.subscriptions.Subscriptions;
 
 public class ThermometerDemoActivity extends Activity {
@@ -44,6 +46,7 @@ public class ThermometerDemoActivity extends Activity {
         mTemperatureValueTextView = (TextView) view.findViewById(R.id.txt_temperature_value);
         mTemperatureNameTextView = (TextView) view.findViewById(R.id.txt_temperature_name);
         setContentView(view);
+
         if (RelayrSdk.isUserLoggedIn()) {
             updateUiForALoggedInUser();
         } else {
@@ -56,11 +59,10 @@ public class ThermometerDemoActivity extends Activity {
     public boolean onPrepareOptionsMenu(Menu menu) {
         menu.clear();
 
-        if (RelayrSdk.isUserLoggedIn()) {
+        if (RelayrSdk.isUserLoggedIn())
             getMenuInflater().inflate(R.menu.thermometer_demo_logged_in, menu);
-        } else {
+        else
             getMenuInflater().inflate(R.menu.thermometer_demo_not_logged_in, menu);
-        }
 
         return super.onPrepareOptionsMenu(menu);
     }
@@ -84,19 +86,16 @@ public class ThermometerDemoActivity extends Activity {
         RelayrSdk.logIn(this)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<User>() {
-                    @Override
-                    public void onCompleted() {
-                    }
+                    @Override public void onCompleted() {}
 
-                    @Override
-                    public void onError(Throwable e) {
+                    @Override public void onError(Throwable e) {
                         Toast.makeText(ThermometerDemoActivity.this,
                                 R.string.unsuccessfully_logged_in, Toast.LENGTH_SHORT).show();
                         updateUiForANonLoggedInUser();
+                        e.printStackTrace();
                     }
 
-                    @Override
-                    public void onNext(User user) {
+                    @Override public void onNext(User user) {
                         Toast.makeText(ThermometerDemoActivity.this,
                                 R.string.successfully_logged_in, Toast.LENGTH_SHORT).show();
                         invalidateOptionsMenu();
@@ -127,22 +126,19 @@ public class ThermometerDemoActivity extends Activity {
 
     private void loadUserInfo() {
         mUserInfoSubscription = RelayrSdk.getUser()
-                .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<User>() {
-                    @Override
-                    public void onCompleted() {
-                    }
+                    @Override public void onCompleted() {}
 
                     @Override
                     public void onError(Throwable e) {
+                        Log.e("ThermometerDemoActivity", "Problem loading user data");
+                        e.printStackTrace();
                         Toast.makeText(ThermometerDemoActivity.this, R.string.something_went_wrong,
                                 Toast.LENGTH_SHORT).show();
-                        e.printStackTrace();
                     }
 
-                    @Override
-                    public void onNext(User user) {
+                    @Override public void onNext(User user) {
                         String hello = String.format(getString(R.string.hello), user.getName());
                         mWelcomeTextView.setText(hello);
                         loadTemperatureDevice(user);
@@ -150,49 +146,54 @@ public class ThermometerDemoActivity extends Activity {
                 });
     }
 
-    private void loadTemperatureDevice(User user) {
-        mTemperatureDeviceSubscription = user.getTransmitters()
-                .flatMap(new Func1<List<Transmitter>, Observable<List<TransmitterDevice>>>() {
-                    @Override
-                    public Observable<List<TransmitterDevice>> call(List<Transmitter> transmitters) {
-                        // This is a naive implementation. Users may own many WunderBars or other
-                        // kinds of transmitter.
-                        if (transmitters.isEmpty())
-                            return Observable.from(new ArrayList<List<TransmitterDevice>>());
-                        return RelayrSdk.getRelayrApi().getTransmitterDevices(transmitters.get(0).getId());
-                    }
-                })
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Subscriber<List<TransmitterDevice>>() {
-                    @Override
-                    public void onCompleted() {
-
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        Toast.makeText(ThermometerDemoActivity.this, R.string.something_went_wrong,
-                                Toast.LENGTH_SHORT).show();
-                        e.printStackTrace();
-                    }
-
-                    @Override
-                    public void onNext(List<TransmitterDevice> devices) {
-                        try {
-                            String modelId = RelayrSdk.getDeviceModelsCache()
-                                    .getModelByName("Wunderbar Thermometer").getId();
-                            for (TransmitterDevice device : devices) {
-                                if (device.getModelId().equals(modelId)) {
-                                    subscribeForTemperatureUpdates(device);
-                                    return;
-                                }
-                            }
-                        } catch (DeviceModelsCacheException e) {
-                            e.printStackTrace();
+    private void loadTemperatureDevice(final User user) {
+        if (RelayrSdk.getDeviceModelsCache().isLoading()) {
+            new Handler().postDelayed(new Runnable() {
+                @Override public void run() {
+                    loadTemperatureDevice(user);
+                }
+            }, 100);
+        } else {
+            user.getTransmitters()
+                    .flatMap(new Func1<List<Transmitter>, Observable<List<TransmitterDevice>>>() {
+                        @Override
+                        public Observable<List<TransmitterDevice>> call(List<Transmitter> transmitters) {
+                            // This is a naive implementation. Users may own many WunderBars or other
+                            // kinds of transmitter.
+                            if (transmitters.isEmpty())
+                                return Observable.from(new ArrayList<List<TransmitterDevice>>());
+                            return RelayrSdk.getRelayrApi().getTransmitterDevices(transmitters.get(0).getId());
                         }
-                    }
-                });
+                    })
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new Subscriber<List<TransmitterDevice>>() {
+                        @Override public void onCompleted() {}
+
+                        @Override public void onError(Throwable e) {
+                            Log.e("ThermometerDemoActivity", "Problem loading device data");
+                            e.printStackTrace();
+                            Toast.makeText(ThermometerDemoActivity.this, R.string.something_went_wrong,
+                                    Toast.LENGTH_SHORT).show();
+                        }
+
+                        @Override public void onNext(List<TransmitterDevice> devices) {
+                            try {
+                                String modelId = RelayrSdk.getDeviceModelsCache()
+                                        .getModelByName("Wunderbar Thermometer", false, false).getId();
+                                Log.w("ThermometerDemoActivity", "ModelId: " + modelId);
+
+                                for (TransmitterDevice device : devices) {
+                                    if (device.getModelId().equals(modelId)) {
+                                        subscribeForTemperatureUpdates(device);
+                                        return;
+                                    }
+                                }
+                            } catch (DeviceModelsCacheException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+        }
     }
 
     @Override
@@ -225,21 +226,19 @@ public class ThermometerDemoActivity extends Activity {
     private void subscribeForTemperatureUpdates(TransmitterDevice device) {
         mDevice = device;
         device.subscribeToCloudReadings()
+                .timeout(15, TimeUnit.SECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<Reading>() {
-                    @Override
-                    public void onCompleted() {
-                    }
+                    @Override public void onCompleted() {}
 
-                    @Override
-                    public void onError(Throwable e) {
+                    @Override public void onError(Throwable e) {
                         Toast.makeText(ThermometerDemoActivity.this, R.string.something_went_wrong,
                                 Toast.LENGTH_SHORT).show();
+                        Log.e("ThermometerDemoActivity", "subscribeForTemperatureUpdates ERROR");
                         e.printStackTrace();
                     }
 
-                    @Override
-                    public void onNext(Reading reading) {
+                    @Override public void onNext(Reading reading) {
                         if (reading.meaning.equals("temperature"))
                             mTemperatureValueTextView.setText(reading.value + "˚C");
                     }
