@@ -2,6 +2,7 @@ package io.relayr.demo.thermometer;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -26,6 +27,7 @@ public class ThermometerDemoActivity extends Activity {
         View view = View.inflate(this, R.layout.activity_thermometer_demo, null);
         mWelcomeTextView = (TextView) view.findViewById(R.id.txt_welcome);
         setContentView(view);
+
         if (RelayrSdk.isUserLoggedIn()) {
             updateUiForALoggedInUser();
         } else {
@@ -38,11 +40,10 @@ public class ThermometerDemoActivity extends Activity {
     public boolean onPrepareOptionsMenu(Menu menu) {
         menu.clear();
 
-        if (RelayrSdk.isUserLoggedIn()) {
+        if (RelayrSdk.isUserLoggedIn())
             getMenuInflater().inflate(R.menu.thermometer_demo_logged_in, menu);
-        } else {
+        else
             getMenuInflater().inflate(R.menu.thermometer_demo_not_logged_in, menu);
-        }
 
         return super.onPrepareOptionsMenu(menu);
     }
@@ -66,21 +67,18 @@ public class ThermometerDemoActivity extends Activity {
         RelayrSdk.logIn(this)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Observer<User>() {
-                    @Override
-                    public void onCompleted() {
-                    }
+                    @Override public void onCompleted() {}
 
-                    @Override
-                    public void onError(Throwable e) {
+                    @Override public void onError(Throwable e) {
                         Toast.makeText(ThermometerDemoActivity.this,
                                 R.string.unsuccessfully_logged_in, Toast.LENGTH_SHORT).show();
                         updateUiForANonLoggedInUser();
+                        e.printStackTrace();
                     }
 
-                    @Override
-                    public void onNext(User user) {
+                    @Override public void onNext(User user) {
                         Toast.makeText(ThermometerDemoActivity.this,
-                                R.string.unsuccessfully_logged_in, Toast.LENGTH_SHORT).show();
+                                R.string.successfully_logged_in, Toast.LENGTH_SHORT).show();
                         invalidateOptionsMenu();
                         updateUiForALoggedInUser();
                     }
@@ -107,16 +105,14 @@ public class ThermometerDemoActivity extends Activity {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<User>() {
-                    @Override
-                    public void onCompleted() {
+                    @Override public void onCompleted() {}
+
+                    @Override public void onError(Throwable e) {
+                        Log.e("ThermometerDemoActivity", "Problem loading user data");
+                        e.printStackTrace();
                     }
 
-                    @Override
-                    public void onError(Throwable e) {
-                    }
-
-                    @Override
-                    public void onNext(User user) {
+                    @Override public void onNext(User user) {
                         String hello = String.format(getString(R.string.hello), user.getName());
                         mWelcomeTextView.setText(hello);
                     }
