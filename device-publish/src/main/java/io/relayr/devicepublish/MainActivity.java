@@ -194,7 +194,6 @@ public class MainActivity extends Activity {
                 final int nextRand = new Random().nextInt(1000);
                 RelayrSdk.getWebSocketClient()
                         .publish(mPublishDevice.getId(), new Reading(0, 0, "test", "/", nextRand))
-                        .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(new Subscriber<Void>() {
                             @Override public void onCompleted() {}
